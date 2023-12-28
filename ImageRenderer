@@ -1,0 +1,39 @@
+package firstJDBC;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import java.awt.*;
+
+public class ImageRenderer extends DefaultTableCellRenderer {
+
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+
+
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        JLabel label = new JLabel();
+        label.setHorizontalAlignment(JLabel.CENTER);
+
+        if (value instanceof ImageIcon) {
+            ImageIcon originalIcon = (ImageIcon) value;
+
+            // Get the original image from the ImageIcon
+            Image originalImage = originalIcon.getImage();
+
+            // Scale the image to a larger size
+            Image scaledImage = originalImage.getScaledInstance(70, 70, Image.SCALE_SMOOTH);
+
+            // Create a new ImageIcon with the scaled image
+            ImageIcon scaledIcon = new ImageIcon(scaledImage);
+
+            // Set the scaled ImageIcon to the JLabel
+            label.setIcon(scaledIcon);
+        }
+
+        return label;
+    }
+}
+
