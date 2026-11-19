@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pokedex</title>
+<meta name="description" content="Search Pokemon, build a party of six, and play Who's that Pokemon.">
+<style>
+  :root {
+    --red: #c62828;
+    --red-dark: #8e1515;
+    --ink: #1d1d1f;
+    --muted: #5f6368;
+    --line: #e3e3e3;
+    --bg: #f4f4f4;
+    --card: #fff;
+    --green-dark: #00994c;
+    --green-light: #07e644;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  header {
+    background: var(--red);
+    color: #fff;
+    padding: 14px 16px;
+    border-bottom: 6px solid var(--red-dark);
+  }
+  .bar {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  h1 { margin: 0; font-size: 1.5rem; letter-spacing: .5px; }
+  .dot {
+    display: inline-block; width: 22px; height: 22px; border-radius: 50%;
+    background: #4fc3f7; border: 3px solid #fff; vertical-align: -4px; margin-right: 8px;
+  }
+  nav { display: flex; gap: 6px; margin-left: auto; }
+  nav button {
+    border: 0; padding: 8px 14px; border-radius: 6px; cursor: pointer;
+    background: var(--red-dark); color: #fff; font-weight: 600; font-size: .95rem;
+  }
+  nav button[aria-selected="true"] { background: #fff; color: var(--red); }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  .panel { background: var(--card); border-radius: 10px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  [hidden] { display: none !important; }
+
+  /* search with suggestions */
+  .search { position: relative; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .search label { font-weight: 600; }
+  .field { position: relative; flex: 1 1 220px; max-width: 320px; }
+  .field input {
+    width: 100%; padding: 9px 10px; font-size: 1rem;
+    border: 1px solid #bbb; border-radius: 6px;
+  }
+  .suggest {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 10;
+    margin: 2px 0 0; padding: 0; list-style: none;
+    background: #fff; border: 1px solid #bbb; border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15); overflow: hidden;
+  }
+  .suggest li { padding: 7px 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  .suggest li img { width: 34px; height: 28px; object-fit: contain; }
+  .suggest li.active, .suggest li:hover { background: #ffe5e5; }
+  .btn {
+    border: 0; padding: 9px 16px; border-radius: 6px; cursor: pointer;
+    background: var(--red); color: #fff; font-weight: 600; font-size: .95rem;
+  }
+  .btn:disabled { background: #bbb; cursor: default; }
+  .btn.secondary { background: #444; }
+
+  /* detail card */
+  .detail { display: flex; gap: 16px; align-items: center; margin: 16px 0; flex-wrap: wrap; }
+  .detail img { width: 120px; height: 120px; object-fit: contain; }
+  .detail h2 { margin: 0 0 4px; }
+  .detail p { margin: 6px 0 0; color: var(--muted); max-width: 640px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { padding: 2px 10px; border-radius: 999px; font-size: .85rem; font-weight: 600; }
+  .meta { color: var(--muted); font-size: .9rem; margin-top: 4px; }
+
+  /* table */
+  .table-wrap { overflow: auto; max-height: 65vh; border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; }
+  th, td { padding: 4px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { position: sticky; top: 0; background: #fafafa; font-size: .85rem; cursor: pointer; user-select: none; white-space: nowrap; }
+  th:hover { background: #f0f0f0; }
+  td.num, th.num { text-align: right; }
+  td img { width: 68px; height: 56px; object-fit: contain; display: block; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: #fff3f3; }
+  tbody tr.selected { background: #ffe0e0; }
+  .count { color: var(--muted); font-size: .9rem; margin: 10px 0 6px; }
+
+  /* party */
+  .slots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 16px 0; }
+  .slot {
+    min-height: 96px; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;
+    background: #eee; border: 2px dashed #ccc; color: var(--muted);
+  }
+  .slot.filled { border: 0; color: #fff; }
+  .slot.dark { background: var(--green-dark); }
+  .slot.light { background: var(--green-light); color: #08331a; }
+  .slot img { width: 80px; height: 80px; object-fit: contain; }
+  .slot .name { font-weight: 700; font-size: 1.05rem; }
+  .slot .x { margin-left: auto; background: rgba(0,0,0,.2); color: inherit; border: 0; border-radius: 4px; cursor: pointer; padding: 2px 8px; }
+  .info { display: grid; gap: 10px; }
+  .info .item { display: flex; gap: 12px; padding: 10px; border-radius: 8px; align-items: center; }
+  .info .item img { width: 80px; height: 80px; object-fit: contain; flex: none; }
+  .info .item p { margin: 4px 0 0; }
+
+  /* trivia */
+  .quiz { max-width: 640px; }
+  .clue { font-size: 1.1rem; line-height: 1.5; background: #fff5f5; border-left: 5px solid var(--red); padding: 12px 14px; border-radius: 6px; }
+  .result { margin-top: 14px; font-weight: 600; min-height: 1.5em; }
+  .result.good { color: #1b7f3a; }
+  .result.bad { color: var(--red); }
+  .reveal { width: 200px; height: 200px; object-fit: contain; display: block; }
+  .score { color: var(--muted); font-size: .9rem; }
+
+  footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20px 16px 30px; }
+  footer a { color: var(--red); }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 1.25rem; }
+    nav { margin-left: 0; width: 100%; }
+    nav button { flex: 1; padding: 8px 6px; }
+    .slots { grid-template-columns: 1fr; }
+    .detail img { width: 90px; height: 90px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1><span class="dot"></span>Pokedex</h1>
+    <nav role="tablist">
+      <button role="tab" data-view="dex" aria-selected="true">Pokedex</button>
+      <button role="tab" data-view="party" aria-selected="false">Party Maker</button>
+      <button role="tab" data-view="quiz" aria-selected="false">Trivia</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- Pokedex view -->
+  <section id="dex" class="panel">
+    <div class="search">
+      <label for="dexSearch">Search</label>
+      <div class="field">
+        <input id="dexSearch" type="text" autocomplete="off" placeholder="Pikachu, Charizard...">
+      </div>
+      <button class="btn" id="dexGo">Search</button>
+    </div>
+    <div id="detail" class="detail" hidden></div>
+    <div class="count" id="count"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th class="num" data-sort="id">ID</th>
+            <th data-sort="name">Name</th>
+            <th data-sort="type1">Type 1</th>
+            <th class="num" data-sort="hp">HP</th>
+            <th class="num" data-sort="atk">Attack</th>
+            <th class="num" data-sort="def">Defense</th>
+            <th class="num" data-sort="spa">Sp. Atk</th>
+            <th class="num" data-sort="spd">Sp. Def</th>
+            <th class="num" data-sort="spe">Speed</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Party Maker view -->
+  <section id="party" class="panel" hidden>
+    <div class="search">
+      <label for="partySearch" id="partyLabel">Choose a Pokemon for Slot 1:</label>
+      <div class="field">
+        <input id="partySearch" type="text" autocomplete="off" placeholder="Type a name">
+      </div>
+      <button class="btn" id="partyAdd">Add to Party</button>
+      <button class="btn secondary" id="partyClear">Clear Party</button>
+    </div>
+    <div class="slots" id="slots"></div>
+    <button class="btn" id="partyInfo" disabled>Learn more about your party</button>
+    <div class="info" id="info" style="margin-top:14px"></div>
+  </section>
+
+  <!-- Trivia view -->
+  <section id="quiz" class="panel" hidden>
+    <div class="quiz">
+      <h2 style="margin-top:0">Who's that Pokemon?</h2>
+      <p class="clue" id="clue"></p>
+      <div class="search">
+        <div class="field">
+          <input id="guess" type="text" autocomplete="off" placeholder="Your guess" aria-label="Your guess">
+        </div>
+        <button class="btn" id="submit">Submit</button>
+        <button class="btn secondary" id="again" hidden>Play Again</button>
+      </div>
+      <div class="result" id="result"></div>
+      <img class="reveal" id="reveal" alt="" hidden>
+      <div class="score" id="score"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Web version of my Java Swing + MySQL Pokedex. The original Java code is in the
+  <a href="https://github.com/vonerdenRyguy/Pokedex_Project">GitHub repo</a>.
+</footer>
+
+<script>
+// Type colors carried over from Type1ColorRenderer.java
+const TYPE_COLORS = {
+  Grass: ["#90ee90", "#000"], Fire: ["#ff4500", "#fff"], Water: ["#00bfff", "#000"],
+  Bug: ["#a8b820", "#000"], Electric: ["#ffdf00", "#000"], Psychic: ["#db7093", "#000"],
+  Dark: ["#8b0000", "#fff"], Fighting: ["#ff6347", "#000"], Ice: ["#add8e6", "#000"],
+  Dragon: ["#000080", "#fff"], Normal: ["#a9a9a9", "#000"], Ground: ["#e2bf65", "#000"],
+  Ghost: ["#735797", "#fff"], Fairy: ["#ffb6c1", "#000"], Poison: ["#800080", "#fff"],
+  Rock: ["#8b4513", "#fff"], Flying: ["#a890f0", "#000"], Steel: ["#ffffff", "#000"],
+};
+
+let all = [];
+const byName = new Map();
+const $ = (id) => document.getElementById(id);
+
+const artwork = (p) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`;
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function chip(type) {
+  if (!type) return "";
+  const [bg, fg] = TYPE_COLORS[type] || ["#ddd", "#000"];
+  const border = type === "Steel" ? "border:1px solid #bbb;" : "";
+  return `<span class="chip" style="background:${bg};color:${fg};${border}">${esc(type)}</span>`;
+}
+
+// Big image with a fallback to the small icon if the artwork doesn't load
+function bigImg(p) {
+  return `<img src="${artwork(p)}" alt="${esc(p.name)}" loading="lazy" onerror="this.onerror=null;this.src='${p.sprite}'">`;
+}
+
+/* ---------- search box with suggestions (like the JPopupMenu in the Java app) ---------- */
+function attachSuggest(input, onPick) {
+  const list = document.createElement("ul");
+  list.className = "suggest";
+  list.hidden = true;
+  input.parentElement.appendChild(list);
+  let items = [], active = -1;
+
+  function render() {
+    const q = input.value.trim().toLowerCase();
+    if (!q) { list.hidden = true; return; }
+    // names that start with the text first, then names that contain it
+    const starts = all.filter((p) => p.name.toLowerCase().startsWith(q));
+    const has = all.filter((p) => !p.name.toLowerCase().startsWith(q) && p.name.toLowerCase().includes(q));
+    items = starts.concat(has).slice(0, 10);
+    active = -1;
+    list.innerHTML = items.map((p) => `<li><img src="${p.sprite}" alt="">${esc(p.name)}</li>`).join("");
+    list.hidden = items.length === 0;
+  }
+  function pick(i) {
+    input.value = items[i].name;
+    list.hidden = true;
+    onPick && onPick(items[i]);
+  }
+  input.addEventListener("input", render);
+  input.addEventListener("keydown", (e) => {
+    if (list.hidden) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      active = (active + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+      [...list.children].forEach((li, i) => li.classList.toggle("active", i === active));
+    } else if (e.key === "Enter" && active >= 0) {
+      e.preventDefault();
+      pick(active);
+    } else if (e.key === "Escape") {
+      list.hidden = true;
+    }
+  });
+  list.addEventListener("mousedown", (e) => {
+    const li = e.target.closest("li");
+    if (li) { e.preventDefault(); pick([...list.children].indexOf(li)); }
+  });
+  input.addEventListener("blur", () => setTimeout(() => (list.hidden = true), 100));
+}
+
+function findPokemon(text) {
+  return byName.get(text.trim().toLowerCase());
+}
+
+/* ---------- Pokedex table ---------- */
+let sortKey = "id", sortAsc = true, selectedId = null;
+
+function renderTable() {
+  const rows = [...all].sort((a, b) => {
+    const x = a[sortKey], y = b[sortKey];
+    const c = typeof x === "number" ? x - y : x.localeCompare(y);
+    return sortAsc ? c : -c;
+  });
+  $("rows").innerHTML = rows.map((p) => `
+    <tr data-id="${p.id}"${p.id === selectedId ? ' class="selected"' : ""}>
+      <td><img src="${p.sprite}" alt="${esc(p.name)}" loading="lazy"></td>
+      <td class="num">${p.id}</td>
+      <td>${esc(p.name)}</td>
+      <td>${chip(p.type1)}</td>
+      <td class="num">${p.hp}</td><td class="num">${p.atk}</td><td class="num">${p.def}</td>
+      <td class="num">${p.spa}</td><td class="num">${p.spd}</td><td class="num">${p.spe}</td>
+    </tr>`).join("");
+  $("count").textContent = `${all.length} Pokemon. Click a row or search to see details. Click a column to sort.`;
+}
+
+function showDetail(p, scroll) {
+  selectedId = p.id;
+  const d = $("detail");
+  d.hidden = false;
+  d.innerHTML = `
+    ${bigImg(p)}
+    <div>
+      <h2>#${p.id} ${esc(p.name)}</h2>
+      <div class="chips">${chip(p.type1)}${chip(p.type2)}</div>
+      <div class="meta">Total: ${p.total} &nbsp;|&nbsp; Generation: ${p.gen}</div>
+      <p>${esc(p.desc)}</p>
+    </div>`;
+  document.querySelectorAll("#rows tr.selected").forEach((r) => r.classList.remove("selected"));
+  const row = document.querySelector(`#rows tr[data-id="${p.id}"]`);
+  if (row) {
+    row.classList.add("selected");
+    if (scroll) {
+      // scroll inside the table only, so the detail card stays on screen
+      const wrap = row.closest(".table-wrap");
+      wrap.scrollTo({ top: row.offsetTop - wrap.clientHeight / 2 + row.offsetHeight / 2, behavior: "smooth" });
+    }
+  }
+  d.scrollIntoView({ block: "nearest" });
+}
+
+function dexSearch() {
+  const p = findPokemon($("dexSearch").value);
+  if (p) showDetail(p, true);
+  else if ($("dexSearch").value.trim()) {
+    $("detail").hidden = false;
+    $("detail").innerHTML = `<p>No Pokemon named "${esc($("dexSearch").value.trim())}".</p>`;
+  }
+}
+
+/* ---------- Party Maker ---------- */
+let party = [];
+const SLOT_SHADE = ["dark", "light", "light", "dark", "dark", "light"]; // same pattern as the Java version
+
+function loadParty() {
+  try {
+    const ids = JSON.parse(localStorage.getItem("party") || "[]");
+    party = ids.map((id) => all.find((p) => p.id === id)).filter(Boolean).slice(0, 6);
+  } catch (e) { party = []; }
+}
+function saveParty() {
+  try { localStorage.setItem("party", JSON.stringify(party.map((p) => p.id))); } catch (e) {}
+}
+
+function renderParty() {
+  $("slots").innerHTML = Array.from({ length: 6 }, (_, i) => {
+    const p = party[i];
+    if (!p) return `<div class="slot">Slot ${i + 1} is empty</div>`;
+    return `<div class="slot filled ${SLOT_SHADE[i]}">
+      ${bigImg(p)}
+      <div><div class="name">${esc(p.name)}</div><div>Type: ${esc(p.type1)}</div><div>HP: ${p.hp}</div></div>
+      <button class="x" data-remove="${i}" aria-label="Remove ${esc(p.name)}">Remove</button>
+    </div>`;
+  }).join("");
+  const full = party.length >= 6;
+  $("partyLabel").textContent = full ? "Party complete!" : `Choose a Pokemon for Slot ${party.length + 1}:`;
+  $("partySearch").disabled = full;
+  if (full) $("partySearch").value = "";
+  $("partyAdd").disabled = full;
+  $("partyInfo").disabled = !full;
+  if (!full) $("info").innerHTML = "";
+}
+
+function addToParty() {
+  const p = findPokemon($("partySearch").value);
+  if (!p) {
+    if ($("partySearch").value.trim()) alert(`Couldn't find "${$("partySearch").value.trim()}".`);
+    return;
+  }
+  if (party.length >= 6) return;
+  party.push(p);
+  $("partySearch").value = "";
+  saveParty();
+  renderParty();
+  if (party.length < 6) $("partySearch").focus();
+}
+
+function partyInfo() {
+  $("info").innerHTML = party.map((p, i) => `
+    <div class="item slot filled ${SLOT_SHADE[i]}">
+      ${bigImg(p)}
+      <div><strong>${esc(p.name)}</strong><p>${esc(p.desc)}</p></div>
+    </div>`).join("");
+}
+
+/* ---------- Trivia ---------- */
+let question = null, attempts = 3, score = { right: 0, played: 0 };
+
+function newQuestion() {
+  const pool = all.filter((p) => p.clue);
+  question = pool[Math.floor(Math.random() * pool.length)];
+  attempts = 3;
+  $("clue").textContent = question.clue;
+  $("guess").value = "";
+  $("guess").disabled = false;
+  $("submit").hidden = false;
+  $("again").hidden = true;
+  $("result").textContent = "";
+  $("result").className = "result";
+  $("reveal").hidden = true;
+  $("score").textContent = score.played ? `Score: ${score.right} / ${score.played}` : "You get 3 guesses.";
+}
+
+function finish(correct) {
+  score.played++;
+  if (correct) score.right++;
+  $("reveal").src = artwork(question);
+  $("reveal").onerror = () => { $("reveal").onerror = null; $("reveal").src = question.sprite; };
+  $("reveal").alt = question.name;
+  $("reveal").hidden = false;
+  $("guess").disabled = true;
+  $("submit").hidden = true;
+  $("again").hidden = false;
+  $("again").focus();
+  $("score").textContent = `Score: ${score.right} / ${score.played}`;
+}
+
+function submitGuess() {
+  const guess = $("guess").value.trim();
+  if (!guess) return;
+  if (guess.toLowerCase() === question.name.toLowerCase()) {
+    $("result").textContent = `Correct! It's ${question.name}.`;
+    $("result").className = "result good";
+    finish(true);
+    return;
+  }
+  attempts--;
+  $("result").className = "result bad";
+  if (attempts > 0) {
+    $("result").textContent = `Incorrect. ${attempts} ${attempts === 1 ? "attempt" : "attempts"} remaining!`;
+    $("guess").select();
+  } else {
+    $("result").textContent = `Out of attempts. The answer was ${question.name}.`;
+    finish(false);
+  }
+}
+
+/* ---------- tabs ---------- */
+function showView(name) {
+  document.querySelectorAll("nav button").forEach((b) => b.setAttribute("aria-selected", b.dataset.view === name));
+  ["dex", "party", "quiz"].forEach((v) => ($(v).hidden = v !== name));
+  if (name === "quiz" && !question) newQuestion();
+}
+
+/* ---------- start ---------- */
+fetch("pokemon.json")
+  .then((r) => r.json())
+  .then((data) => {
+    all = data;
+    all.forEach((p) => { if (!byName.has(p.name.toLowerCase())) byName.set(p.name.toLowerCase(), p); });
+
+    renderTable();
+    attachSuggest($("dexSearch"), (p) => showDetail(p, true));
+    $("dexGo").onclick = dexSearch;
+    $("dexSearch").addEventListener("keydown", (e) => { if (e.key === "Enter") dexSearch(); });
+    $("rows").addEventListener("click", (e) => {
+      const tr = e.target.closest("tr");
+      if (tr) showDetail(all.find((p) => p.id === +tr.dataset.id), false);
+    });
+    document.querySelectorAll("th[data-sort]").forEach((th) => th.addEventListener("click", () => {
+      const k = th.dataset.sort;
+      sortAsc = sortKey === k ? !sortAsc : k === "id" || k === "name" || k === "type1";
+      sortKey = k;
+      renderTable();
+    }));
+
+    loadParty();
+    renderParty();
+    attachSuggest($("partySearch"));
+    $("partyAdd").onclick = addToParty;
+    $("partySearch").addEventListener("keydown", (e) => { if (e.key === "Enter") addToParty(); });
+    $("partyClear").onclick = () => { party = []; saveParty(); renderParty(); };
+    $("partyInfo").onclick = partyInfo;
+    $("slots").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-remove]");
+      if (b) { party.splice(+b.dataset.remove, 1); saveParty(); renderParty(); }
+    });
+
+    attachSuggest($("guess"));
+    $("submit").onclick = submitGuess;
+    $("guess").addEventListener("keydown", (e) => { if (e.key === "Enter" && !$("submit").hidden) submitGuess(); });
+    $("again").onclick = newQuestion;
+
+    document.querySelectorAll("nav button").forEach((b) => (b.onclick = () => showView(b.dataset.view)));
+  })
+  .catch(() => {
+    $("count").textContent = "Couldn't load the Pokemon data. Try refreshing the page.";
+  });
+</script>
+</body>
+</html>
