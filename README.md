@@ -1,42 +1,30 @@
-# Pokédex
+# Pokedex_Project
 
-A desktop Pokédex app built in **Java Swing** and backed by a **SQL database over JDBC**. You can search Pokémon, view their stats and sprites, build a party, and take a Pokémon quiz.
+A Pokedex desktop app written in Java Swing. It connects to a MySQL database with JDBC to load Pokemon data.
 
-<img width="1912" height="991" alt="Pokédex app main screen" src="https://github.com/user-attachments/assets/cd1e89c3-f162-4b7c-811a-ce1b4e04ea7f" />
+<img width="1912" height="991" alt="Pokedex main screen" src="https://github.com/user-attachments/assets/cd1e89c3-f162-4b7c-811a-ce1b4e04ea7f" />
 
-## Features
+## What it does
 
-- **Live search** that filters the Pokémon table as you type
-- **Stat table** showing ID, name, type, HP, Attack, Defense, Sp. Atk, Sp. Def and Speed, with sprite images
-- **Type-colored rows**, using a custom table cell renderer
-- **Party Maker** for building a team
-- **Questions** mode, a Pokémon quiz
+- Search for Pokemon by name. The table filters as you type.
+- Shows each Pokemon's sprite, type and base stats.
+- Rows are colored by type.
+- Party Maker lets you put together a team.
+- Questions is a small Pokemon quiz.
 
-## Tech Stack
+## Running it
 
-| Layer    | Technology            |
-|----------|-----------------------|
-| UI       | Java Swing            |
-| Data     | MySQL via JDBC        |
-| Language | Java                  |
+1. Install MySQL and create a database called `pokedex` with the Pokemon data.
+2. Add the MySQL Connector/J driver to your classpath.
+3. In `PokedexMenu.java`, change the username and password to match your MySQL setup.
+4. Run `PokedexMenu`.
 
-## Project Structure
+## Files
 
-```
-PokedexMenu.java       # Main window: search, table, navigation
-PokemonQuestion.java   # Quiz mode
-ImageRenderer/         # Renders sprite images inside table cells
-Type1ColorRenderer/    # Colors rows by Pokémon type
-Pokemon/               # Pokémon model / data classes
-```
+- `PokedexMenu.java`: the main window (search, table, buttons)
+- `PokemonQuestion.java`: the quiz
+- `ImageRenderer/`: shows the sprite images in the table
+- `Type1ColorRenderer/`: colors rows by type
+- `Pokemon/`: the Pokemon data classes
 
-## Running It
-
-1. Install **MySQL** and create a database named `pokedex` with the Pokémon data loaded.
-2. Add the MySQL JDBC driver (Connector/J) to the classpath.
-3. Set your MySQL username and password in the `jdbcUrl` / `username` / `password` fields in `PokedexMenu.java`.
-4. Compile and run `PokedexMenu`.
-
-## Background
-
-Built as a database course project to practice relational data modeling and connecting a Java GUI to a SQL backend.
+I made this for my databases class.
